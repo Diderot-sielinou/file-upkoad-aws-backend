@@ -28,14 +28,14 @@ export const handler = async (
   const key = decodeURIComponent(detail.object.key.replace(/\+/g, ' '));
   const bucketName = detail.bucket.name;
 
-  // Éviter la récursion
+  // Avoid recursion
   if (key.startsWith(THUMBNAIL_PREFIX)) {
     console.log(`Skipping thumbnail: ${key}`);
     return;
   }
 
   try {
-    //  Récupérer le Content-Type
+    //  Retrieve the Content-Type
     const headResponse = await s3Client.send(
       new HeadObjectCommand({ Bucket: bucketName, Key: key })
     );
@@ -49,7 +49,7 @@ export const handler = async (
       return;
     }
 
-    // 📥 Télécharger le fichier
+    // Download the file
     const response = await s3Client.send(
       new GetObjectCommand({ Bucket: bucketName, Key: key })
     );
@@ -79,7 +79,7 @@ export const handler = async (
       return;
     }
 
-    //  Sauvegarder la miniature
+    //  Save thumbnail
     const thumbnailKey = `${THUMBNAIL_PREFIX}${key}.jpg`;
     await s3Client.send(
       new PutObjectCommand({
