@@ -1,11 +1,10 @@
-// lambda/metadata-updater/handler.ts
-import { S3Event } from 'aws-lambda';
-import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
+import { S3Event } from "aws-lambda";
+import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 
 const dynamoClient = new DynamoDBClient();
 const TABLE_NAME = process.env.TABLE_NAME!;
 
-// Type pour l'objet S3 étendu (seulement ce qu'on utilise)
+// Type for the extended S3 object (only what we use)
 interface ExtendedS3Object {
   key: string;
   size: number;
@@ -15,13 +14,13 @@ interface ExtendedS3Object {
   versionId?: string;
 }
 
-// Fonction utilitaire pour extraire contentType de façon sûre
+// Utility function to extract contentType
 function getContentTypeFromRecord(record: any): string {
-  // AWS envoie contentType dans l'événement S3 si Content-Type a été spécifié à l'upload
+  //AWS sends contentType in S3 event if Content-Type was specified on upload
   const contentType = record?.s3?.object?.contentType;
-  return typeof contentType === 'string' && contentType.trim() !== ''
+  return typeof contentType === "string" && contentType.trim() !== ""
     ? contentType.trim()
-    : 'application/octet-stream';
+    : "application/octet-stream";
 }
 
 export const handler = async (event: S3Event): Promise<void> => {
@@ -38,24 +37,20 @@ export const handler = async (event: S3Event): Promise<void> => {
           TableName: TABLE_NAME,
           Key: { fileId: { S: objectKey } },
           UpdateExpression:
-            'SET #status = :status, fileSize = :size, contentType = :contentType, uploadedAt = :uploadedAt',
-          ExpressionAttributeNames: {
-            '#status': 'status',
-          },
+            "SET #status = :status, fileSize = :size, uploadedAt = :uploadedAt",
+          ExpressionAttributeNames: { "#status": "status" },
           ExpressionAttributeValues: {
-            ':status': { S: 'completed' },
-            ':size': { N: size.toString() },
-            ':contentType': { S: contentType },
-            ':uploadedAt': { S: new Date().toISOString() },
+            ":status": { S: "completed" },
+            ":size": { N: size.toString() },
+            ":uploadedAt": { S: new Date().toISOString() },
           },
-          ConditionExpression: 'attribute_exists(fileId)',
+          ConditionExpression: "attribute_exists(fileId)",
         })
       );
 
       console.log(`✅ Updated metadata for file: ${objectKey}`);
     } catch (error) {
       console.error(`❌ Error processing S3 event record:`, error);
-      // En production, envisagez une DLQ ou une alarme CloudWatch
     }
   }
 };
